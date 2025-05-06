@@ -6,19 +6,29 @@ from glob import glob
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-def load_names(path, file_path):
-    f = open(file_path, "r")
-    data = f.read().split("\n")[:-1]
-    images = [os.path.join(path,"images", name) + ".jpg" for name in data]
-    masks = [os.path.join(path,"masks", name) + ".jpg" for name in data]
+def load_names(path):
+    images = []
+    masks = []
+    images_dir = os.path.join(path, 'images')
+    for root, _, files in os.walk(images_dir):
+        for file in files:
+            if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                image_path = os.path.join(root, file)
+
+                relative_path = os.path.relpath(image_path, images_dir)
+                mask_path = os.path.join(path, 'masks', relative_path)
+
+                if os.path.exists(mask_path):
+                    images.append(image_path)
+                    masks.append(mask_path)
     return images, masks
 
 def load_data(path):
-    train_names_path = f"{path}/train.txt"
-    valid_names_path = f"{path}/val.txt"
+    train_path = os.path.join(path, "train")
+    valid_path = os.path.join(path, "val")
 
-    train_x, train_y = load_names(path, train_names_path)
-    valid_x, valid_y = load_names(path, valid_names_path)
+    train_x, train_y = load_names(train_path)
+    valid_x, valid_y = load_names(valid_path)
 
     return (train_x, train_y), (valid_x, valid_y)
 
