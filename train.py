@@ -73,7 +73,7 @@ if __name__ == "__main__":
     # valid_x = sorted(glob("new_data/test/image/*"))
     # valid_y = sorted(glob("new_data/test/mask/*"))
 
-    path = "/../../Kvasir-SEG/"
+    path = "/content/drive/Shareddrives/Projeto Zscan 2 - datasets segmentacao/datasets/segmentação/Polypgen/sequence/positive/splitted"
     (train_x, train_y), (valid_x, valid_y) = load_data(path)
 
     train_x, train_y = shuffling(train_x, train_y)
