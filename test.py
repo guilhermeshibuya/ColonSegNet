@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     """ Load dataset """
     path = "/content/drive/Shareddrives/Projeto Zscan 2 - datasets segmentacao/datasets/segmentação/Polypgen/sequence/positive/splitted"
-    (train_x, train_y), (test_x, test_y) = load_data(path)
+    (train_x, train_y), _, (test_x, test_y) = load_data(path)
 
     """ Hyperparameters """
     size = (512, 512)

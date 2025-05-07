@@ -26,11 +26,13 @@ def load_names(path):
 def load_data(path):
     train_path = os.path.join(path, "train")
     valid_path = os.path.join(path, "val")
+    test_path = os.path.join(path, "test")
 
     train_x, train_y = load_names(train_path)
     valid_x, valid_y = load_names(valid_path)
+    test_x, test_y = load_names(test_path)
 
-    return (train_x, train_y), (valid_x, valid_y)
+    return (train_x, train_y), (valid_x, valid_y), (test_x, test_y)
 
 class KvasirDataset(Dataset):
     """ Dataset for the Kvasir-SEG dataset. """
