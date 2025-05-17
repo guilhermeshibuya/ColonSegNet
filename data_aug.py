@@ -148,10 +148,10 @@ def main():
     print("Train: ", len(train_x))
     print("Valid: ", len(val_x))
 
-    create_dir("new_data/train/image/")
-    create_dir("new_data/train/mask/")
-    create_dir("new_data/val/image/")
-    create_dir("new_data/val/mask/")
+    create_dir("new_data/train/images/")
+    create_dir("new_data/train/masks/")
+    create_dir("new_data/val/images/")
+    create_dir("new_data/val/masks/")
 
 
     augment_data(train_x, train_y, "new_data/train/")
