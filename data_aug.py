@@ -98,7 +98,7 @@ def augment_data(images, masks, save_path, augment=True):
                 x10 = augmented['image']
                 y10 = augmented['mask']
 
-                aug = CoarseDropout(p=1, max_holes=10, drop_height=32, drop_width=32)
+                aug = CoarseDropout(p=1, num_holes_range=(1, 10), hole_height_range=(16, 32), hole_width_range=(16, 32), fill=0)
                 augmented = aug(image=x, mask=y)
                 x11 = augmented['image']
                 y11 = augmented['mask']
