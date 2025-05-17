@@ -67,12 +67,6 @@ if __name__ == "__main__":
         train_log.close()
 
     """ Load dataset """
-    # train_x = sorted(glob("new_data/train/image/*"))
-    # train_y = sorted(glob("new_data/train/mask/*"))
-    #
-    # valid_x = sorted(glob("new_data/test/image/*"))
-    # valid_y = sorted(glob("new_data/test/mask/*"))
-
     path = "/content/drive/Shareddrives/Projeto Zscan 2 - datasets segmentacao/datasets/segmentação/Polypgen/sequence/positive/splitted"
     (train_x, train_y), (valid_x, valid_y), _ = load_data(path)
 
@@ -81,7 +75,7 @@ if __name__ == "__main__":
     print_and_save(train_log_path, data_str)
 
     """ Hyperparameters """
-    size = (512, 512)
+    size = (256, 256)
     batch_size = 1
     num_epochs = 100
     lr = 1e-4
@@ -108,7 +102,7 @@ if __name__ == "__main__":
     """ Model """
     device = torch.device('cuda')
     model = CompNet()
-    # model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+    model.load_state_dict(torch.load(checkpoint_path, map_location=device))
     model = model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -117,14 +111,27 @@ if __name__ == "__main__":
     # loss_fn = IoUBCELoss()
     loss_name = "BCE Dice Loss"
 
+    start_epoch = 0
+    best_valid_loss = float('inf')
+
+    if os.path.exists(checkpoint_path):
+        print('Loading checkpoint...')
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
+        best_valid_loss = checkpoint['best_valid_loss']
+        print(f"Checkpoint loaded. Starting from epoch {start_epoch}")
+
+
     data_str = f"Hyperparameters:\nImage Size: {size}\nBatch Size: {batch_size}\nLR: {lr}\nEpochs: {num_epochs}\n"
     data_str += f"Optimizer: Adam\nLoss: {loss_name}\n"
     print_and_save(train_log_path, data_str)
 
     """ Training the model. """
-    best_valid_loss = float('inf')
 
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         start_time = time.time()
 
         train_loss = train(model, train_loader, optimizer, loss_fn, device)
@@ -133,7 +140,14 @@ if __name__ == "__main__":
 
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
-            torch.save(model.state_dict(), checkpoint_path)
+            # torch.save(model.state_dict(), checkpoint_path)
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'scheduler_state_dict': scheduler.state_dict(),
+                'best_valid_loss': best_valid_loss,
+            }, checkpoint_path)
 
         end_time = time.time()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
