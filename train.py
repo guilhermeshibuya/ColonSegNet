@@ -127,6 +127,8 @@ if __name__ == "__main__":
     num_epochs = 100
     lr = 1e-4
     checkpoint_path = "files/checkpoint.pth"
+    best_model_path = "files/best.pth"
+    last_model_path = "files/last.pth"
 
     """ Dataset and loader """
     train_dataset = KvasirDataset(train_x, train_y, size)
@@ -185,16 +187,23 @@ if __name__ == "__main__":
         valid_loss = evaluate(model, valid_loader, loss_fn, device)
         scheduler.step(valid_loss)
 
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict(),
+            'best_valid_loss': best_valid_loss,
+        }, last_model_path)
+
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
-            # torch.save(model.state_dict(), checkpoint_path)
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'scheduler_state_dict': scheduler.state_dict(),
                 'best_valid_loss': best_valid_loss,
-            }, checkpoint_path)
+            }, best_model_path)
 
         end_time = time.time()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
