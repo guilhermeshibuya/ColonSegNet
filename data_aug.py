@@ -158,19 +158,20 @@ def augment_data(images, masks, save_path, augment=True):
 def main():
     np.random.seed(42)
 
-    path = "/../../Kvasir-SEG/"
-    (train_x, train_y), (test_x, test_y) = load_data(path)
+    path = "/content/drive/Shareddrives/Projeto Zscan 2 - datasets segmentacao/datasets/segmentação/Polypgen/sequence/positive/splitted"
+    (train_x, train_y), (val_x, val_y), _ = load_data(path)
 
     print("Train: ", len(train_x))
-    print("Valid: ", len(test_x))
+    print("Valid: ", len(val_x))
 
     create_dir("new_data/train/image/")
     create_dir("new_data/train/mask/")
-    create_dir("new_data/test/image/")
-    create_dir("new_data/test/mask/")
+    create_dir("new_data/val/image/")
+    create_dir("new_data/val/mask/")
+
 
     augment_data(train_x, train_y, "new_data/train/", augment=False)
-    augment_data(test_x, test_y, "new_data/test/", augment=False)
+    augment_data(val_x, val_y, "new_data/val/", augment=False)
 
 if __name__ == "__main__":
     main()

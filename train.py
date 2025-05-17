@@ -15,11 +15,17 @@ from utils import (
 )
 from model import CompNet
 from loss import DiceLoss, DiceBCELoss, IoUBCELoss
+from metrics import DiceHelper, IouHelper, RecallHelper, PrecisionHelper
 
 def train(model, loader, optimizer, loss_fn, device):
-    epoch_loss = 0
+    dice_helper = DiceHelper()
+    iou_helper = IouHelper()
+    recall_helper = RecallHelper()
+    precision_helper = PrecisionHelper()
 
+    epoch_loss = 0
     model.train()
+
     for i, (x, y) in enumerate(loader):
         x = x.to(device, dtype=torch.float32)
         y = y.to(device, dtype=torch.float32)
@@ -31,10 +37,33 @@ def train(model, loader, optimizer, loss_fn, device):
         optimizer.step()
         epoch_loss += loss.item()
 
+        yp_sigmoid = torch.sigmoid(yp)
+        yp_bin = (yp_sigmoid > 0.5).cpu().numpy()
+        y_np = (y.cpu().numpy() > 0.5).astype(np.uint8)
+
+        for j in range(x.size(0)):
+            iou_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"train_{i}_{j}")
+            dice_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"train_{i}_{j}")
+            recall_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"train_{i}_{j}")
+            precision_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"train_{i}_{j}")
+
     epoch_loss = epoch_loss/len(loader)
+
+    dice_score = dice_helper.calculate_dice()
+    iou_score = iou_helper.calculate_iou()
+    recall_score = recall_helper.calculate_recall()
+    precision_score = precision_helper.calculate_precision()
+
+    print(f"Train Dice: {dice_score:.4f} | Train IoU: {iou_score:.4f} | Train Recall: {recall_score:.4f} | Train Precision: {precision_score:.4f}")
+
     return epoch_loss
 
 def evaluate(model, loader, loss_fn, device):
+    dice_helper = DiceHelper()
+    iou_helper = IouHelper()
+    recall_helper = RecallHelper()
+    precision_helper = PrecisionHelper()
+
     epoch_loss = 0
 
     model.eval()
@@ -47,7 +76,25 @@ def evaluate(model, loader, loss_fn, device):
             loss = loss_fn(yp, y)
             epoch_loss += loss.item()
 
+            yp_sigmoid = torch.sigmoid(yp)
+            yp_bin = (yp_sigmoid > 0.5).cpu().numpy()
+            y_np = (y.cpu().numpy() > 0.5).astype(np.uint8)
+
+            for j in range(x.size(0)):
+                iou_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"valid_{i}_{j}")
+                dice_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"valid_{i}_{j}")
+                recall_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"valid_{i}_{j}")
+                precision_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"valid_{i}_{j}")
+
     epoch_loss = epoch_loss/len(loader)
+
+    dice_score = dice_helper.calculate_dice()
+    iou_score = iou_helper.calculate_iou()
+    recall_score = recall_helper.calculate_recall()
+    precision_score = precision_helper.calculate_precision()
+
+    print(f"Val Dice: {dice_score:.4f} | Val IoU: {iou_score:.4f} | Val Recall: {recall_score:.4f} | Val Precision: {precision_score:.4f}")
+
     return epoch_loss
 
 if __name__ == "__main__":
