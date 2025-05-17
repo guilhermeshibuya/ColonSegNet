@@ -117,6 +117,10 @@ if __name__ == "__main__":
     path = "/content/drive/Shareddrives/Projeto Zscan 2 - datasets segmentacao/datasets/segmentação/Polypgen/sequence/positive/splitted"
     (train_x, train_y), (valid_x, valid_y), _ = load_data(path)
 
+    # Augmented dataset
+    # augmented_path ="new_data"
+    # (train_x, train_y), (valid_x, valid_y), _ = load_data(augmented_path)
+
     train_x, train_y = shuffling(train_x, train_y)
     data_str = f"Dataset Size:\nTrain: {len(train_x)} - Valid: {len(valid_x)}\n"
     print_and_save(train_log_path, data_str)
