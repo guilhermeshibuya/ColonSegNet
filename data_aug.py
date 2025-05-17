@@ -55,7 +55,7 @@ def augment_data(images, masks, save_path, augment=True):
                 y2 = augmented['mask']
 
                 ## ElasticTransform
-                aug = ElasticTransform(p=1, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03)
+                aug = ElasticTransform(p=1, alpha=120, sigma=120 * 0.05)
                 augmented = aug(image=x, mask=y)
                 x3 = augmented['image']
                 y3 = augmented['mask']
@@ -67,7 +67,7 @@ def augment_data(images, masks, save_path, augment=True):
                 y4 = augmented['mask']
 
                 ## Optical Distortion
-                aug = OpticalDistortion(p=1, distort_limit=2, shift_limit=0.5)
+                aug = OpticalDistortion(p=1, distort_limit=2)
                 augmented = aug(image=x, mask=y)
                 x5 = augmented['image']
                 y5 = augmented['mask']
@@ -98,7 +98,7 @@ def augment_data(images, masks, save_path, augment=True):
                 x10 = augmented['image']
                 y10 = augmented['mask']
 
-                aug = CoarseDropout(p=1, max_holes=10, max_height=32, max_width=32)
+                aug = CoarseDropout(p=1, max_holes=10, drop_height=32, drop_width=32)
                 augmented = aug(image=x, mask=y)
                 x11 = augmented['image']
                 y11 = augmented['mask']
