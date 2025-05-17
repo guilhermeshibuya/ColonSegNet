@@ -170,8 +170,8 @@ def main():
     create_dir("new_data/val/mask/")
 
 
-    augment_data(train_x, train_y, "new_data/train/", augment=False)
-    augment_data(val_x, val_y, "new_data/val/", augment=False)
+    augment_data(train_x, train_y, "new_data/train/")
+    augment_data(val_x, val_y, "new_data/val/")
 
 if __name__ == "__main__":
     main()
