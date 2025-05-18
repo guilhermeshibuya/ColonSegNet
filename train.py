@@ -102,20 +102,21 @@ if __name__ == "__main__":
     seeding(42)
 
     """ Directories """
-    create_dir("files")
+    files_path = ""
+    create_dir(files_path)
 
     """ Training logfile """
-    train_log_path = "files/train_log.txt"
+    train_log_path = os.path.join(files_path, "train_log.txt")
     if os.path.exists(train_log_path):
         print("Log file exists")
     else:
-        train_log = open("files/train_log.txt", "w")
+        train_log = open(train_log_path, "w")
         train_log.write("\n")
         train_log.close()
 
     """ Load dataset """
-    path = "/content/drive/Shareddrives/Projeto Zscan 2 - datasets segmentacao/datasets/segmentação/Polypgen/sequence/positive/splitted"
-    (train_x, train_y), (valid_x, valid_y), _ = load_data(path)
+    dataset_path = ""
+    (train_x, train_y), (valid_x, valid_y), _ = load_data(dataset_path)
 
     # Augmented dataset
     # augmented_path ="new_data"
@@ -130,9 +131,9 @@ if __name__ == "__main__":
     batch_size = 1
     num_epochs = 100
     lr = 1e-4
-    checkpoint_path = "files/checkpoint.pth"
-    best_model_path = "files/best.pth"
-    last_model_path = "files/last.pth"
+    checkpoint_path = "./checkpoint.pth"
+    best_model_path = os.path.join(files_path, "best.pth") 
+    last_model_path = os.path.join(files_path, "last.pth")
 
     """ Dataset and loader """
     train_dataset = KvasirDataset(train_x, train_y, size)
@@ -167,9 +168,9 @@ if __name__ == "__main__":
     start_epoch = 0
     best_valid_loss = float('inf')
 
-    if os.path.exists(checkpoint_path):
+    if os.path.exists(last_model_path):
         print('Loading checkpoint...')
-        checkpoint = torch.load(checkpoint_path, map_location=device)
+        checkpoint = torch.load(last_model_path, map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         scheduler.load_state_dict(checkpoint['scheduler_state_dict'])

@@ -1,11 +1,8 @@
 
 import os
-import random
 import numpy as np
 import cv2
 from tqdm import tqdm
-from glob import glob
-from sklearn.model_selection import train_test_split
 from utils import create_dir
 from data import load_data
 
@@ -26,136 +23,85 @@ from albumentations import (
 def augment_data(images, masks, save_path, augment=True):
     """ Performing data augmentation. """
     size = (512, 512)
-    crop_size = (448, 448)
 
-    for idx, (x, y) in tqdm(enumerate(zip(images, masks)), total=len(images)):
-        image_name = x.split("/")[-1].split(".")[0]
-        mask_name = y.split("/")[-1].split(".")[0]
+    for idx, (x_path, y_path) in tqdm(enumerate(zip(images, masks)), total=len(images)):
+        image_name = os.path.splitext(os.path.basename(x_path))[0]
+        mask_name = os.path.splitext(os.path.basename(y_path))[0]
 
-        x = cv2.imread(x, cv2.IMREAD_COLOR)
-        y = cv2.imread(y, cv2.IMREAD_COLOR)
+        x = cv2.imread(x_path, cv2.IMREAD_COLOR)
+        y = cv2.imread(y_path, cv2.IMREAD_COLOR)
 
-        if x.shape[0] >= size[0] and x.shape[1] >= size[1]:
-            if augment == True:
-                ## Crop
-                x_min = 0
-                y_min = 0
-                x_max = x_min + size[0]
-                y_max = y_min + size[1]
+        x = cv2.resize(x, size)
+        y = cv2.resize(y, size)
 
-                aug = Crop(p=1, x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max)
-                augmented = aug(image=x, mask=y)
-                x1 = augmented['image']
-                y1 = augmented['mask']
+        if augment:
+            aug_x = [x]
+            aug_y = [y]
 
-                # Random Rotate 90 degree
-                aug = RandomRotate90(p=1)
-                augmented = aug(image=x, mask=y)
-                x2 = augmented['image']
-                y2 = augmented['mask']
+            aug = Crop(p=1, x_min=0, x_max=size[0], y_min=0, y_max=size[1])
+            augmented = aug(image=x, mask=y)
+            aug_x.append(augmented["image"])
+            aug_y.append(augmented["mask"])
 
-                ## ElasticTransform
-                aug = ElasticTransform(p=1, alpha=120, sigma=120 * 0.05)
-                augmented = aug(image=x, mask=y)
-                x3 = augmented['image']
-                y3 = augmented['mask']
+            for transformation in [
+                RandomRotate90(p=1),
+                ElasticTransform(p=1, alpha=120, sigma=120 * 0.05),
+                GridDistortion(p=1),
+                OpticalDistortion(p=1, distort_limit=2),
+                VerticalFlip(p=1),
+                HorizontalFlip(p=1),
+                RGBShift(p=1),
+                ChannelShuffle(p=1),
+                CoarseDropout(p=1, num_holes_range=(1, 10), hole_height_range=(16, 32), hole_width_range=(16, 32), fill=0),
+                GaussNoise(p=1)
+            ]:
+                augmented = transformation(image=x, mask=y)
+                aug_x.append(augmented["image"])
+                aug_y.append(augmented["mask"])
 
-                ## Grid Distortion
-                aug = GridDistortion(p=1)
-                augmented = aug(image=x, mask=y)
-                x4 = augmented['image']
-                y4 = augmented['mask']
+            # Grayscale
+            gray = cv2.cvtColor(x, cv2.COLOR_RGB2GRAY)
+            gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)  
+            aug_x.append(gray)
+            aug_y.append(y)
 
-                ## Optical Distortion
-                aug = OpticalDistortion(p=1, distort_limit=2)
-                augmented = aug(image=x, mask=y)
-                x5 = augmented['image']
-                y5 = augmented['mask']
+        else:
+            aug_x = [x]
+            aug_y = [y]
 
-                ## Vertical Flip
-                aug = VerticalFlip(p=1)
-                augmented = aug(image=x, mask=y)
-                x6 = augmented['image']
-                y6 = augmented['mask']
+        for i, m in zip(aug_x, aug_y):
+            tmp_image_name = f"{image_name}_{idx}.jpg"
+            tmp_mask_name  = f"{mask_name}_{idx}.jpg"
 
-                ## Horizontal Flip
-                aug = HorizontalFlip(p=1)
-                augmented = aug(image=x, mask=y)
-                x7 = augmented['image']
-                y7 = augmented['mask']
-
-                ## Grayscale
-                x8 = cv2.cvtColor(x, cv2.COLOR_RGB2GRAY)
-                y8 = y
-
-                aug = RGBShift(p=1)
-                augmented = aug(image=x, mask=y)
-                x9 = augmented['image']
-                y9 = augmented['mask']
-
-                aug = ChannelShuffle(p=1)
-                augmented = aug(image=x, mask=y)
-                x10 = augmented['image']
-                y10 = augmented['mask']
-
-                aug = CoarseDropout(p=1, num_holes_range=(1, 10), hole_height_range=(16, 32), hole_width_range=(16, 32), fill=0)
-                augmented = aug(image=x, mask=y)
-                x11 = augmented['image']
-                y11 = augmented['mask']
-
-                aug = GaussNoise(p=1)
-                augmented = aug(image=x, mask=y)
-                x12 = augmented['image']
-                y12 = augmented['mask']
-
-                images = [
-                    x, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12
-                ]
-                masks  = [
-                    y, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12
-                ]
-
-            else:
-                images = [x]
-                masks  = [y]
-
-            idx = 0
-        for i, m in zip(images, masks):
-            i = cv2.resize(i, size)
-            m = cv2.resize(m, size)
-
-            if len(images) == 1:
-                tmp_image_name = f"{image_name}.jpg"
-                tmp_mask_name  = f"{mask_name}.jpg"
-            else:
-                tmp_image_name = f"{image_name}_{idx}.jpg"
-                tmp_mask_name  = f"{mask_name}_{idx}.jpg"
-
-            image_path = os.path.join(save_path, "image/", tmp_image_name)
-            mask_path  = os.path.join(save_path, "mask/", tmp_mask_name)
+            image_path = os.path.join(save_path, "images", tmp_image_name)
+            mask_path  = os.path.join(save_path, "masks", tmp_mask_name)
 
             cv2.imwrite(image_path, i)
             cv2.imwrite(mask_path, m)
 
             idx += 1
 
+
 def main():
     np.random.seed(42)
 
-    path = "/content/drive/Shareddrives/Projeto Zscan 2 - datasets segmentacao/datasets/segmentação/Polypgen/sequence/positive/splitted"
-    (train_x, train_y), (val_x, val_y), _ = load_data(path)
+    dataset_path = ""
+    (train_x, train_y), (val_x, val_y), _ = load_data(dataset_path)
 
     print("Train: ", len(train_x))
     print("Valid: ", len(val_x))
 
-    create_dir("new_data/train/images/")
-    create_dir("new_data/train/masks/")
-    create_dir("new_data/val/images/")
-    create_dir("new_data/val/masks/")
+    augmented_path = ""
+    create_dir(os.path.join(augmented_path, "train", "images"))
+    create_dir(os.path.join(augmented_path, "train", "masks"))
+    create_dir(os.path.join(augmented_path, "val", "images"))
+    create_dir(os.path.join(augmented_path, "val", "masks"))
+    create_dir(os.path.join(augmented_path, "test", "images"))
+    create_dir(os.path.join(augmented_path, "test", "masks"))
 
 
-    augment_data(train_x, train_y, "new_data/train/")
-    augment_data(val_x, val_y, "new_data/val/")
+    augment_data(train_x, train_y, os.path.join(augmented_path, "train"))
+    augment_data(val_x, val_y, os.path.join(augmented_path, "val"))
 
 if __name__ == "__main__":
     main()
