@@ -54,9 +54,7 @@ def train(model, loader, optimizer, loss_fn, device):
     recall_score = recall_helper.calculate_recall()
     precision_score = precision_helper.calculate_precision()
 
-    print(f"Train Dice: {dice_score:.4f} | Train IoU: {iou_score:.4f} | Train Recall: {recall_score:.4f} | Train Precision: {precision_score:.4f}")
-
-    return epoch_loss
+    return epoch_loss, dice_score, iou_score, recall_score, precision_score
 
 def evaluate(model, loader, loss_fn, device):
     dice_helper = DiceHelper()
@@ -93,9 +91,7 @@ def evaluate(model, loader, loss_fn, device):
     recall_score = recall_helper.calculate_recall()
     precision_score = precision_helper.calculate_precision()
 
-    print(f"Val Dice: {dice_score:.4f} | Val IoU: {iou_score:.4f} | Val Recall: {recall_score:.4f} | Val Precision: {precision_score:.4f}")
-
-    return epoch_loss
+    return epoch_loss, dice_score, iou_score, recall_score, precision_score
 
 if __name__ == "__main__":
     """ Seeding """
@@ -128,7 +124,7 @@ if __name__ == "__main__":
 
     """ Hyperparameters """
     size = (256, 256)
-    batch_size = 1
+    batch_size = 4
     num_epochs = 100
     lr = 1e-4
     checkpoint_path = "./checkpoint.pth"
@@ -188,8 +184,8 @@ if __name__ == "__main__":
     for epoch in range(start_epoch, num_epochs):
         start_time = time.time()
 
-        train_loss = train(model, train_loader, optimizer, loss_fn, device)
-        valid_loss = evaluate(model, valid_loader, loss_fn, device)
+        train_loss, train_dice, train_iou, train_recall, train_precision = train(model, train_loader, optimizer, loss_fn, device)
+        valid_loss, val_dice, val_iou, val_recall, val_precision = evaluate(model, valid_loader, loss_fn, device)
         scheduler.step(valid_loss)
 
         torch.save({
@@ -214,6 +210,6 @@ if __name__ == "__main__":
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
 
         data_str = f'Epoch: {epoch+1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s\n'
-        data_str += f'\tTrain Loss: {train_loss:.3f}\n'
-        data_str += f'\t Val. Loss: {valid_loss:.3f}\n'
+        data_str += f'\tTrain Loss: {train_loss:.3f} | Train Dice: {train_dice:.3f} | Train IoU: {train_iou:.3f} | Train Recall: {train_recall:.3f} | Train Precision: {train_precision:.3f}\n'
+        data_str += f'\t Val. Loss: {valid_loss:.3f} | Val Dice: {val_dice:.3f} | Val IoU: {val_iou:.3f} | Val Recall: {val_recall:.3f} | Val Precision: {val_precision:.3f}\n'
         print_and_save(train_log_path, data_str)

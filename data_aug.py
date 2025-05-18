@@ -84,14 +84,15 @@ def augment_data(images, masks, save_path, augment=True):
 
 def main():
     np.random.seed(42)
-
-    dataset_path = ""
-    (train_x, train_y), (val_x, val_y), _ = load_data(dataset_path)
+    
+    dataset_path = r"D:\zscan\datasets\polypgen-splitted"
+    (train_x, train_y), (val_x, val_y), (test_x, test_y) = load_data(dataset_path)
 
     print("Train: ", len(train_x))
     print("Valid: ", len(val_x))
+    print("Test: ", len(test_x))
 
-    augmented_path = ""
+    augmented_path = r"D:\zscan\datasets\polypgen-augmented"
     create_dir(os.path.join(augmented_path, "train", "images"))
     create_dir(os.path.join(augmented_path, "train", "masks"))
     create_dir(os.path.join(augmented_path, "val", "images"))
@@ -102,6 +103,7 @@ def main():
 
     augment_data(train_x, train_y, os.path.join(augmented_path, "train"))
     augment_data(val_x, val_y, os.path.join(augmented_path, "val"))
+    augment_data(test_x, test_y, os.path.join(augmented_path, "test"))
 
 if __name__ == "__main__":
     main()
