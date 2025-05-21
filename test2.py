@@ -13,6 +13,7 @@ from model import CompNet
 from utils import create_dir, seeding, make_channel_last
 from data import load_data
 from crf import apply_crf
+from metrics import IouHelper, DiceHelper, RecallHelper, PrecisionHelper
 
 def calculate_metrics(y_true, y_pred):
     y_true = y_true.cpu().numpy()
@@ -70,57 +71,48 @@ if __name__ == "__main__":
     model.eval()
 
     """ Testing """
-    metrics_score = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     time_taken = []
 
+    iou_helper = IouHelper()
+    dice_helper = DiceHelper()
+    recall_helper = RecallHelper()
+    precision_helper = PrecisionHelper()
+
     for i, (x, y) in enumerate(zip(test_x, test_y)):
-        name = y.split("/")[-1].split(".")[0]
-
-        ## Image
-        image = cv2.imread(x, cv2.IMREAD_COLOR)
-
-        image1 = cv2.resize(image, size)
-        ori_img1 = image1
-        image1 = np.transpose(image1, (2, 0, 1))
-        image1 = image1/255.0
-        image1 = np.expand_dims(image1, axis=0)
-        image1 = image1.astype(np.float32)
-        image1 = torch.from_numpy(image1)
-        image1 = image1.to(device)
-
-        ## Mask
-        mask = cv2.imread(y, cv2.IMREAD_GRAYSCALE)
-
-        mask1 = cv2.resize(mask, size)
-        ori_mask1 = mask1
+        image_name = y.split("/")[-1]
+        mask1 = cv2.imread(y, cv2.IMREAD_GRAYSCALE)
+        mask1 = cv2.resize(mask1, size)
+        mask1 = mask1 / 255.0
         mask1 = np.expand_dims(mask1, axis=0)
-        mask1 = mask1/255.0
         mask1 = np.expand_dims(mask1, axis=0)
-        mask1 = mask1.astype(np.float32)
-        mask1 = torch.from_numpy(mask1)
-        mask1 = mask1.to(device)
+        mask1 = torch.tensor(mask1, dtype=torch.float32).to(device)
+
+        x = cv2.imread(x, cv2.IMREAD_COLOR)
+        x = cv2.resize(x, size)
+        x = x / 255.0
+        x = x.transpose(2, 0, 1)
+        x = np.expand_dims(x, axis=0)
+        x = torch.tensor(x, dtype=torch.float32).to(device)
 
         with torch.no_grad():
-            """ FPS calculation """
             start_time = time.time()
-            pred_y1 = torch.sigmoid(model(image1))
-            end_time = time.time() - start_time
-            time_taken.append(end_time)
-            print("{} - {:.10f}".format(name, end_time))
-
-            """ Evaluation metrics """
-            score = calculate_metrics(mask1, pred_y1)
-            metrics_score = list(map(add, metrics_score, score))
-
-            """ Predicted Mask """
+            pred_y1 = model(x)
+            pred_y1 = torch.sigmoid(pred_y1)
             pred_y1 = pred_y1[0].cpu().numpy()
-            pred_y1 = np.squeeze(pred_y1, axis=0)
-            pred_y1 = pred_y1 > 0.5
-            pred_y1 = pred_y1.astype(np.int32)
-            pred_y1 = apply_crf(ori_img1, pred_y1)
-            pred_y1 = pred_y1 * 255
-            # pred_y = np.transpose(pred_y, (1, 0))
-            pred_y1 = np.array(pred_y1, dtype=np.uint8)
+            pred_y1 = np.squeeze(pred_y1)
+            stop_time = time.time()
+
+            total_time = stop_time - start_time
+            time_taken.append(total_time)
+
+            pred_y1_bin = pred_y1 > 0.5
+            pred_y1_bin = pred_y1_bin.astype(np.uint8)
+            mask1_bin = mask1[0][0].cpu().numpy().astype(np.uint8)
+
+            iou_helper.add_masks(mask1_bin, pred_y1_bin)
+            dice_helper.add_masks(mask1_bin, pred_y1_bin)
+            recall_helper.add_masks(mask1_bin, pred_y1_bin)
+            precision_helper.add_masks(mask1_bin, pred_y1_bin)
 
         ori_img1 = ori_img1
         ori_mask1 = mask_parse(ori_mask1)
@@ -134,18 +126,15 @@ if __name__ == "__main__":
         ]
 
         cat_images = np.concatenate(tmp, axis=1)
-        cv2.imwrite(f"results/mix/{name}.png", cat_images)
-        cv2.imwrite(f"results/mask/{name}.png", pred_y1)
+        cv2.imwrite(f"results/mix/{image_name}.png", cat_images)
+        cv2.imwrite(f"results/mask/{image_name}.png", pred_y1)
 
-    jaccard = metrics_score[0]/len(test_x)
-    f1 = metrics_score[1]/len(test_x)
-    recall = metrics_score[2]/len(test_x)
-    precision = metrics_score[3]/len(test_x)
-    acc = metrics_score[4]/len(test_x)
-    f2 = metrics_score[5]/len(test_x)
+    mean_iou = iou_helper.calculate_iou()
+    mean_dice = dice_helper.calculate_dice()
+    mean_recall = recall_helper.calculate_recall()
+    mean_precision = precision_helper.calculate_precision()
+    avg_time = np.mean(time_taken)
+    fps = 1 / avg_time if avg_time > 0 else 0
 
-    print(f"Jaccard: {jaccard:1.4f} - F1: {f1:1.4f} - Recall: {recall:1.4f} - Precision: {precision:1.4f} - Acc: {acc:1.4f} - F2: {f2:1.4f}")
-
-    mean_time_taken = np.mean(time_taken)
-    mean_fps = 1/mean_time_taken
-    print("Mean FPS: ", mean_fps)
+    print(f"IoU: {mean_iou:.4f} - Dice: {mean_dice:.4f} - Recall: {mean_recall:.4f} - Precision: {mean_precision:.4f}")
+    print(f"Average Inference Time: {avg_time:.4f} seconds - FPS: {fps:.2f}")

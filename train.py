@@ -42,10 +42,10 @@ def train(model, loader, optimizer, loss_fn, device):
         y_np = (y.cpu().numpy() > 0.5).astype(np.uint8)
 
         for j in range(x.size(0)):
-            iou_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"train_{i}_{j}")
-            dice_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"train_{i}_{j}")
-            recall_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"train_{i}_{j}")
-            precision_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"train_{i}_{j}")
+            iou_helper.add_masks(yp_bin[j, 0], y_np[j, 0])
+            dice_helper.add_masks(yp_bin[j, 0], y_np[j, 0])
+            recall_helper.add_masks(yp_bin[j, 0], y_np[j, 0])
+            precision_helper.add_masks(yp_bin[j, 0], y_np[j, 0])
 
     epoch_loss = epoch_loss/len(loader)
 
@@ -79,10 +79,10 @@ def evaluate(model, loader, loss_fn, device):
             y_np = (y.cpu().numpy() > 0.5).astype(np.uint8)
 
             for j in range(x.size(0)):
-                iou_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"valid_{i}_{j}")
-                dice_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"valid_{i}_{j}")
-                recall_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"valid_{i}_{j}")
-                precision_helper.add_masks(yp_bin[j, 0], y_np[j, 0], f"valid_{i}_{j}")
+                iou_helper.add_masks(yp_bin[j, 0], y_np[j, 0])
+                dice_helper.add_masks(yp_bin[j, 0], y_np[j, 0])
+                recall_helper.add_masks(yp_bin[j, 0], y_np[j, 0])
+                precision_helper.add_masks(yp_bin[j, 0], y_np[j, 0])
 
     epoch_loss = epoch_loss/len(loader)
 
@@ -211,5 +211,5 @@ if __name__ == "__main__":
 
         data_str = f'Epoch: {epoch+1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s\n'
         data_str += f'\tTrain Loss: {train_loss:.3f} | Train Dice: {train_dice:.3f} | Train IoU: {train_iou:.3f} | Train Recall: {train_recall:.3f} | Train Precision: {train_precision:.3f}\n'
-        data_str += f'\t Val. Loss: {valid_loss:.3f} | Val Dice: {val_dice:.3f} | Val IoU: {val_iou:.3f} | Val Recall: {val_recall:.3f} | Val Precision: {val_precision:.3f}\n'
+        data_str += f'\t Val. Loss: {valid_loss:.3f} |  Val. Dice: {val_dice:.3f} |  Val. IoU: {val_iou:.3f} |  Val. Recall: {val_recall:.3f} |  Val. Precision: {val_precision:.3f}\n'
         print_and_save(train_log_path, data_str)

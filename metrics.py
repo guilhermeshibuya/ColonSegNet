@@ -4,7 +4,7 @@ class IouHelper:
   iou_sum = 0
   iou_count = 0
 
-  def add_masks(self, mask1, mask2, name):
+  def add_masks(self, mask1, mask2):
     intersection_matrix = np.logical_and(mask1, mask2)
     intersection_count = np.sum(intersection_matrix)
 
@@ -28,7 +28,7 @@ class DiceHelper:
   dice_sum = 0
   dice_count = 0
 
-  def add_masks(self, mask1, mask2, name):
+  def add_masks(self, mask1, mask2):
     intersection_matrix = np.logical_and(mask1, mask2)
     intersection_count = np.sum(intersection_matrix)
 
